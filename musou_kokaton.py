@@ -391,14 +391,27 @@ def main():
                         score.value -= 50
                         shield.add(Shield(bird,400))
 
+            if event.type == pg.KEYDOWN and event.key == pg.K_RETURN and score.value > 200:  #重力場作成
+                grv = Gravity(400)
+                grvt.add(grv)    
+                score.value -=200  #スコアが200減
             if pg.key.get_pressed()[pg.K_RSHIFT]:
                 if score.value>100:
                     score.value -= 100
                     bird.state = "hyper"
                     bird.hyper_life = 500
-
-
         screen.blit(bg_img, [0, 0])
+
+
+
+        for emy in pg.sprite.groupcollide(emys, grvt, True, False):  #重力場維持
+            exps.add(Explosion(emy, 100))
+        for bomb in pg.sprite.groupcollide(bombs, grvt, True, False):
+            exps.add(Explosion(bomb, 50))   
+        
+
+
+    
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
             emys.add(Enemy())
@@ -444,6 +457,7 @@ def main():
                 pg.display.update()
                 time.sleep(2)
                 return
+
 
 
         emp_duration = emp.duration * 50  # 継続時間をフレーム単位に変換
