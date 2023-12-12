@@ -7,8 +7,8 @@ from turtle import speed
 import pygame as pg
 
 
-WIDTH = 1600  # ゲームウィンドウの幅
-HEIGHT = 900  # ゲームウィンドウの高さ
+WIDTH = 1200  # ゲームウィンドウの幅
+HEIGHT = 600  # ゲームウィンドウの高さ
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
 
 
@@ -49,6 +49,7 @@ class Bird(pg.sprite.Sprite):
         pg.K_RIGHT: (+1, 0),
     }   
 
+
     def __init__(self, num: int, xy: tuple[int, int]):
         """
         こうかとん画像Surfaceを生成する
@@ -68,6 +69,8 @@ class Bird(pg.sprite.Sprite):
             (0, +1): pg.transform.rotozoom(img, -90, 1.0),  # 下
             (+1, +1): pg.transform.rotozoom(img, -45, 1.0),  # 右下
         }
+        self.state  = "normal"
+        self.hyper_life= 0
         self.dire = (+1, 0)
         self.image = self.imgs[self.dire]
         self.rect = self.image.get_rect()
@@ -90,6 +93,7 @@ class Bird(pg.sprite.Sprite):
         引数1 key_lst：押下キーの真理値リスト
         引数2 screen：画面Surface
         """
+
         sum_mv = [0, 0]
         for k, mv in __class__.delta.items():
             if key_lst[k]:
@@ -109,6 +113,12 @@ class Bird(pg.sprite.Sprite):
         if not (sum_mv[0] == 0 and sum_mv[1] == 0):
             self.dire = tuple(sum_mv)
             self.image = self.imgs[self.dire]
+        if self.state == "hyper":
+            self.image = pg.transform.laplacian(self.image)
+            self.hyper_life -= 1
+
+            if self.hyper_life <= 0:
+                self.state == "normal"
         screen.blit(self.image, self.rect)
 
 class Gravity(pg.sprite.Sprite):  #重力場クラス
@@ -342,10 +352,12 @@ def main():
 
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
-            if event.type == pg.KEYDOWN and event.key == pg.K_RETURN and score.value > 200:  #重力場作成
-                grv = Gravity(400)
-                grvt.add(grv)    
-                score.value -=200  #スコアが200減少   
+            if pg.key.get_pressed()[pg.K_RSHIFT]:
+                if score.value>100:
+                    score.value -= 100
+                    bird.state = "hyper"
+                    bird.hyper_life = 500
+
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
@@ -369,14 +381,18 @@ def main():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.value += 1  # 1点アップ
 
-        for bomb in (pg.sprite.spritecollide(bird, bombs, True)):
-            if bomb.state == "inactive":
-                continue
-            bird.change_img(8, screen) # こうかとん悲しみエフェクト
-            score.update(screen)
-            pg.display.update()
-            time.sleep(2)
-            return
+
+
+        for bomb in pg.sprite.spritecollide(bird, bombs, True):
+            if bird.state == "hyper":
+                score.value += 1
+                exps.add(Explosion(bomb, 50))
+            else:
+                bird.change_img(8, screen) # こうかとん悲しみエフェクト
+                score.update(screen)
+                pg.display.update()
+                time.sleep(2)
+                return
 
 
         emp_duration = emp.duration * 50  # 継続時間をフレーム単位に変換
