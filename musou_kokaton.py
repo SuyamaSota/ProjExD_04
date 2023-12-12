@@ -137,7 +137,7 @@ class Gravity(pg.sprite.Sprite):  #重力場クラス
         self.life -= 1    
         if self.life < 0:
             self.kill()    
-        #screen.blit(self.image, self.rect)    
+          
         
 
 
