@@ -234,7 +234,7 @@ class Score:
     def __init__(self):
         self.font = pg.font.Font(None, 50)
         self.color = (0, 0, 255)
-        self.value = 200
+        self.value = 0
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         self.rect = self.image.get_rect()
         self.rect.center = 100, HEIGHT-50
@@ -339,14 +339,14 @@ def main():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.value += 1  # 1点アップ
 
-        if len(pg.sprite.spritecollide(bird, bombs, True)) != 0:
-            for bomb in bombs:
-                if bomb.state == "stop" or bomb.state == "doun":
-                    bird.change_img(8, screen) # こうかとん悲しみエフェクト
-                    score.update(screen)
-                    pg.display.update()
-                    time.sleep(2)
-                    return
+        for bomb in (pg.sprite.spritecollide(bird, bombs, True)):
+            if bomb.state == "inactive":
+                continue
+            bird.change_img(8, screen) # こうかとん悲しみエフェクト
+            score.update(screen)
+            pg.display.update()
+            time.sleep(2)
+            return
 
 
         emp_duration = emp.duration * 50  # 継続時間をフレーム単位に変換
