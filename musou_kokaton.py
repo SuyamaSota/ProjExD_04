@@ -3,6 +3,7 @@ import os
 import random
 import sys
 import time
+from turtle import speed
 import pygame as pg
 
 
@@ -46,7 +47,7 @@ class Bird(pg.sprite.Sprite):
         pg.K_DOWN: (0, +1),
         pg.K_LEFT: (-1, 0),
         pg.K_RIGHT: (+1, 0),
-    }
+    }   
 
     def __init__(self, num: int, xy: tuple[int, int]):
         """
@@ -72,6 +73,7 @@ class Bird(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = xy
         self.speed = 10
+    
 
     def change_img(self, num: int, screen: pg.Surface):
         """
@@ -94,6 +96,12 @@ class Bird(pg.sprite.Sprite):
                 self.rect.move_ip(+self.speed*mv[0], +self.speed*mv[1])
                 sum_mv[0] += mv[0]
                 sum_mv[1] += mv[1]
+                
+        if key_lst[pg.K_LSHIFT]: #キーリストの中から左シフトを選択
+            self.speed = 20      #speedを20に設定
+        else:                    #左シフトを押さなかったとき
+            self.speed=10        #speedを10に設定
+
         if check_bound(self.rect) != (True, True):
             for k, mv in __class__.delta.items():
                 if key_lst[k]:
