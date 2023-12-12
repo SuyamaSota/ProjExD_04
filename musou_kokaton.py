@@ -3,6 +3,7 @@ import os
 import random
 import sys
 import time
+from turtle import speed
 import pygame as pg
 
 
@@ -46,7 +47,7 @@ class Bird(pg.sprite.Sprite):
         pg.K_DOWN: (0, +1),
         pg.K_LEFT: (-1, 0),
         pg.K_RIGHT: (+1, 0),
-    }
+    }   
 
     def __init__(self, num: int, xy: tuple[int, int]):
         """
@@ -72,6 +73,7 @@ class Bird(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = xy
         self.speed = 10
+    
 
     def change_img(self, num: int, screen: pg.Surface):
         """
@@ -94,6 +96,12 @@ class Bird(pg.sprite.Sprite):
                 self.rect.move_ip(+self.speed*mv[0], +self.speed*mv[1])
                 sum_mv[0] += mv[0]
                 sum_mv[1] += mv[1]
+                
+        if key_lst[pg.K_LSHIFT]: #キーリストの中から左シフトを選択
+            self.speed = 20      #speedを20に設定
+        else:                    #左シフトを押さなかったとき
+            self.speed=10        #speedを10に設定
+
         if check_bound(self.rect) != (True, True):
             for k, mv in __class__.delta.items():
                 if key_lst[k]:
@@ -102,6 +110,21 @@ class Bird(pg.sprite.Sprite):
             self.dire = tuple(sum_mv)
             self.image = self.imgs[self.dire]
         screen.blit(self.image, self.rect)
+
+class Gravity(pg.sprite.Sprite):  #重力場クラス
+    def __init__(self, life):
+        super().__init__()
+        self.life = life
+        self.image = pg.Surface((WIDTH, HEIGHT))
+        pg.draw.rect(self.image, (0, 0, 0), (0, 0, 1600, 900))
+        self.image.set_alpha(128)
+        self.rect = self.image.get_rect()
+    def update(self):
+        self.life -= 1    
+        if self.life < 0:
+            self.kill()    
+        #screen.blit(self.image, self.rect)    
+        
 
 
 class Bomb(pg.sprite.Sprite):
@@ -235,7 +258,7 @@ class Score:
     def __init__(self):
         self.font = pg.font.Font(None, 50)
         self.color = (0, 0, 255)
-        self.value = 0
+        self.value = 1000
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         self.rect = self.image.get_rect()
         self.rect.center = 100, HEIGHT-50
@@ -302,6 +325,7 @@ def main():
     score = Score()
 
     bird = Bird(3, (900, 400))
+    grvt = pg.sprite.Group()
     bombs = pg.sprite.Group()
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
@@ -315,16 +339,21 @@ def main():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return 0
-            if event.type == pg.KEYDOWN:
-                if event.key == pg.K_SPACE:
-                    beams.add(Beam(bird))
-                elif event.key == pg.K_e:
-                    emp.activate(score)
 
+            if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
+                beams.add(Beam(bird))
+            if event.type == pg.KEYDOWN and event.key == pg.K_RETURN and score.value > 200:  #重力場作成
+                grv = Gravity(400)
+                grvt.add(grv)    
+                score.value -=200  #スコアが200減少   
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
             emys.add(Enemy())
+        for emy in pg.sprite.groupcollide(emys, grvt, True, False):  #重力場維持
+            exps.add(Explosion(emy, 100))
+        for bomb in pg.sprite.groupcollide(bombs, grvt, True, False):
+            exps.add(Explosion(bomb, 50))     
 
         for emy in emys:
             if emy.state == "stop" and tmr%emy.interval == 0:
@@ -359,6 +388,8 @@ def main():
 
 
         bird.update(key_lst, screen)
+        grvt.update()
+        grvt.draw(screen)
         beams.update()
         beams.draw(screen)
         emys.update()
