@@ -103,6 +103,21 @@ class Bird(pg.sprite.Sprite):
             self.image = self.imgs[self.dire]
         screen.blit(self.image, self.rect)
 
+class Gravity(pg.sprite.Sprite):  #重力場クラス
+    def __init__(self, life):
+        super().__init__()
+        self.life = life
+        self.image = pg.Surface((WIDTH, HEIGHT))
+        pg.draw.rect(self.image, (0, 0, 0), (0, 0, 1600, 900))
+        self.image.set_alpha(128)
+        self.rect = self.image.get_rect()
+    def update(self):
+        self.life -= 1    
+        if self.life < 0:
+            self.kill()    
+        #screen.blit(self.image, self.rect)    
+        
+
 
 class Bomb(pg.sprite.Sprite):
     """
@@ -234,7 +249,7 @@ class Score:
     def __init__(self):
         self.font = pg.font.Font(None, 50)
         self.color = (0, 0, 255)
-        self.value = 0
+        self.value = 1000
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         self.rect = self.image.get_rect()
         self.rect.center = 100, HEIGHT-50
@@ -251,6 +266,7 @@ def main():
     score = Score()
 
     bird = Bird(3, (900, 400))
+    grvt = pg.sprite.Group()
     bombs = pg.sprite.Group()
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
@@ -265,10 +281,18 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+            if event.type == pg.KEYDOWN and event.key == pg.K_RETURN and score.value > 200:  #重力場作成
+                grv = Gravity(400)
+                grvt.add(grv)    
+                score.value -=200  #スコアが200減少   
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
             emys.add(Enemy())
+        for emy in pg.sprite.groupcollide(emys, grvt, True, False):  #重力場維持
+            exps.add(Explosion(emy, 100))
+        for bomb in pg.sprite.groupcollide(bombs, grvt, True, False):
+            exps.add(Explosion(bomb, 50))     
 
         for emy in emys:
             if emy.state == "stop" and tmr%emy.interval == 0:
@@ -292,6 +316,8 @@ def main():
             return
 
         bird.update(key_lst, screen)
+        grvt.update()
+        grvt.draw(screen)
         beams.update()
         beams.draw(screen)
         emys.update()
